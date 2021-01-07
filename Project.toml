@@ -1,0 +1,14 @@
+name = "CUDAExtensions"
+uuid = "4f54f1f5-1f5b-44f2-9b8c-a60204acd44d"
+authors = ["tor.erlend95@gmail.com <tor.erlend95@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+DiffRules = "b552c78f-8df3-52c6-915a-8e097449b14b"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
