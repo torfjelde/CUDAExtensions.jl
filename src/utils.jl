@@ -1,7 +1,13 @@
+const _blacklisted_replacements = Set([ :*, :/, :+, :-, :\ ])
+
 function replace_device_all(ex)
     MacroTools.postwalk(ex) do x
-        x = MacroTools.isexpr(x, :call) ? :(CUDA.cufunc($(x.args[1]))($(x.args[2:end]...))) : x
-        
+        x = if MacroTools.isexpr(x, :call) && (x.args[1] ∉ _blacklisted_replacements)
+            :(CUDA.cufunc($(x.args[1]))($(x.args[2:end]...)))
+        else
+            x
+        end
+
         x = CUDA._cuint(x)
         x = CUDA._cupowliteral(x)
         x
@@ -53,13 +59,7 @@ function make_cufunc_diffrule(mod, f, nargs)
         end
     else
         MacroTools.postwalk(Meta.quot(drule)) do e
-            if e in args
-                println("$e in args")
-                Expr(:$, e)
-            else
-                e
-            end
-            # e in args ? Expr(:$, e) : e
+            e in args ? Expr(:$, e) : e
         end
     end
 
