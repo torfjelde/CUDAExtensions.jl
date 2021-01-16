@@ -37,6 +37,8 @@ function make_cufunc_register(fname)
 end
 
 function make_cufunc_diffrule(mod, f, nargs)
+    nargs == 1 || throw(ArgumentError("`make_cufunc_diffrule` currently only supports nargs=1"))
+
     # TODO: should default be `Base` or `@__MODULE__`?
     m, fname = MacroTools.isexpr(f, :.) ? (Symbol(f.args[end - 1]), f.args[end].value) : (:Base, f)
     
@@ -76,10 +78,10 @@ function make_cufunc_diffrule(mod, f, nargs)
     # Determine which method to use for evaluating the diff-rule created
     def_func = if nargs == 1
         :(ForwardDiff.unary_dual_definition)
-    elseif nargs == 2
-        :(ForwardDiff.binary_dual_definition)
+    # elseif nargs == 2
+    #     :(ForwardDiff.binary_dual_definition)
     else
-        throw(ValueError("this one you gotta do yourself buddy"))
+        throw(ArgumentError("this one you gotta do yourself buddy"))
     end
 
     return quote

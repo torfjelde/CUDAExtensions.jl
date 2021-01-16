@@ -77,19 +77,8 @@ end
   end
 end
 
-# logbeta(x, y) = loggamma(x) + loggamma(y) - loggamma(x + y)
-
-# # Register for replacement in CUDA.jl's broadcasting style
-# CUDA.cufunc(::typeof(SpecialFunctions.logbeta)) = logbeta
-# CUDA.cufunc(::typeof(SpecialFunctions.loggamma)) = loggamma
-# CUDA.cufunc(::typeof(SpecialFunctions.digamma)) = digamma
-# CUDA.cufunc(::typeof(SpecialFunctions.trigamma)) = trigamma
-
-# @cufunc SpecialFunctions.digamma(x) = digamma(x)
-# @cufunc SpecialFunctions.trigamma(x) = trigamma(x)
-
 @cufunc SpecialFunctions.loggamma(x) = CUDA.lgamma(x)
-@cufunc SpecialFunctions.logbeta(x, y) = SpecialFunction.loggamma(x) + SpecialFunctions.loggamma(y) - SpecialFunctions.loggamma(x + y)
+# @cufunc SpecialFunctions.logbeta(x, y) = SpecialFunctions.loggamma(x) + SpecialFunctions.loggamma(y) - SpecialFunctions.loggamma(x + y)
 
 @cufunc SpecialFunctions.erf(x) = CUDA.erf(x)
 @cufunc SpecialFunctions.erfc(x) = CUDA.erfc(x)
