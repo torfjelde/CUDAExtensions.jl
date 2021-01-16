@@ -1,8 +1,24 @@
 const _blacklisted_replacements = Set([ :*, :/, :+, :-, :\ ])
+const _irrationals = Set([:π, :ℯ, :γ, :φ, :catalan])
+
+
+function should_replace(x)
+    MacroTools.isexpr(x, :call) || return false
+    (x.args[1] ∉ _blacklisted_replacements) || return false
+
+    # HACK: CUDa can't handle `Irrational` so we gotta do something about that.
+    # If uniary function and argument is `Irrational`, don't replace
+    if length(x.args) == 2 && x.args[2] ∈ _irrationals
+        return false
+    end
+
+    return true
+end
+
 
 function replace_device_all(ex)
     MacroTools.postwalk(ex) do x
-        x = if MacroTools.isexpr(x, :call) && (x.args[1] ∉ _blacklisted_replacements)
+        x = if should_replace(x)
             :(CUDA.cufunc($(x.args[1]))($(x.args[2:end]...)))
         else
             x
@@ -14,6 +30,7 @@ function replace_device_all(ex)
     end
 end
 
+
 function tocuname(f)
     # If we have expression of form `Mod1.Mod2.f` then we define `cufunc(Mod1.Mod2.f) = cuf`
     # not `cuMod1.Mod2.f`.
@@ -24,6 +41,7 @@ function tocuname(f)
     end
 end
 
+
 function make_cufunc_function(def)
     f = def[:name]
     def[:name] = tocuname(f) # Expr(:., Symbol(mod), QuoteNode(tocuname(f)))
@@ -31,10 +49,12 @@ function make_cufunc_function(def)
     return :($(esc(MacroTools.combinedef(def))))
 end
 
+
 function make_cufunc_register(fname)
     cuname = tocuname(fname)
     return :(@inline CUDA.cufunc(::typeof($(esc(fname)))) = $(esc(cuname)))
 end
+
 
 function make_cufunc_diffrule(mod, f, nargs)
     # TODO: should default be `Base` or `@__MODULE__`?
@@ -91,6 +111,7 @@ function make_cufunc_diffrule(mod, f, nargs)
         eval($(def_func)($(QuoteNode(Symbol(mod))), $(QuoteNode(cuname))))
     end
 end
+
 
 macro cufunc(ex)
     def = MacroTools.splitdef(ex)
