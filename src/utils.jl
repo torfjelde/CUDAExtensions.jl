@@ -37,13 +37,15 @@ function make_cufunc_register(fname)
 end
 
 function make_cufunc_diffrule(mod, f, nargs)
-    nargs == 1 || throw(ArgumentError("`make_cufunc_diffrule` currently only supports nargs=1"))
-
     # TODO: should default be `Base` or `@__MODULE__`?
     m, fname = MacroTools.isexpr(f, :.) ? (Symbol(f.args[end - 1]), f.args[end].value) : (:Base, f)
     
     # Return early if no diff-rule present
     DiffRules.hasdiffrule(m, fname, nargs) || return nothing
+
+    # TODO: support binary also; currently the issue is that the rule isn't generated
+    # properly due to the use of `map` I believe.
+    nargs == 1 || throw(ArgumentError("`make_cufunc_diffrule` currently only supports nargs=1"))
 
     # Get the name
     cuname = tocuname(Expr(:., m, QuoteNode(fname)))
