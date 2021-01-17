@@ -1,17 +1,17 @@
 using SpecialFunctions
 
 # https://github.com/JuliaMath/SpecialFunctions.jl/blob/d18ff04178dd37a60cc716a60ab3caf1a6903f43/src/gamma.jl#L20
-@cufunc function SpecialFunctions.digamma(x)
-    if x <= 0 # reflection formula
-        ψ = -π / CUDA.tan(π * x)
+@cufunc function SpecialFunctions.digamma(x::T) where {T<:Real}
+    ψ = zero(x)
+    if x ≤ 0 # reflection formula
+        ψ -= π / tan(π * x)
         x = 1 - x
-    else
-        ψ = zero(x)
     end
+
     if x < 7
         # shift using recurrence formula
         ν = one(x)
-        n = 7 - CUDA.floor(x)
+        n = 7 - floor(x)
         while ν <= n - 1
             ψ -= inv(x + ν)
             ν += one(x)
@@ -20,61 +20,56 @@ using SpecialFunctions
         x += n
     end
     t = inv(x)
-    ψ += CUDA.log(x) - t / 2
+    ψ += log(x) - t / 2
     t *= t # 1/z^2
     # the coefficients here are Float64(bernoulli[2:9] .// (2*(1:8)))
-    # TODO: Something really weird going on here. Can't use f32; tried
-    # [×] `oftype` of coeffs
-    # [×] `Float32` of coeffs
-    # [×] `...f0` of coeffs
-    # [×] Even failed if I just straight up don't even do this computation o.O
     ψ -= (
         t *
-        # @evalpoly(
-        #     t,
-        #     oftype(x, 0.08333333333333333), oftype(x, -0.008333333333333333),
-        #     oftype(x, 0.003968253968253968), oftype(x, -0.004166666666666667),
-        #     oftype(x, 0.007575757575757576), oftype(x, -0.021092796092796094),
-        #     oftype(x, 0.08333333333333333), oftype(x, -0.4432598039215686)
-        # )
         @evalpoly(
             t,
-            0.08333333333333333, -0.008333333333333333,
-            0.003968253968253968, -0.004166666666666667,
-            0.007575757575757576, -0.021092796092796094,
-            0.08333333333333333, -0.4432598039215686
+            T(0.08333333333333333), T(-0.008333333333333333),
+            T(0.003968253968253968), T(-0.004166666666666667),
+            T(0.007575757575757576), T(-0.021092796092796094),
+            T(0.08333333333333333), T(-0.4432598039215686)
         )
     )
     return ψ
 end
 
-function _cutrigamma(x)
-  ψ = zero(x)
-  if x < 8
-    # shift using recurrence formula
-    n = 8 - CUDA.floor(x)
-    ψ += inv(x)^2
-    ν = one(x)
-    while ν <= n - 1
-      ψ += inv(x + ν)^2
-      ν += one(x)
+function _cutrigamma(x::T) where {T<:Real}
+    ψ = zero(x)
+    if x < 8
+        # shift using recurrence formula
+        n = 8 - CUDA.floor(x)
+        ψ += inv(x)^2
+        ν = one(x)
+        while ν <= n - 1
+            ψ += inv(x + ν)^2
+            ν += one(x)
+        end
+        x += n
     end
-    x += n
-  end
-  t = inv(x)
-  w = t * t # 1/z^2
-  ψ += t + 0.5 * w
-  # the coefficients here are Float64(bernoulli[2:9])
-  ψ += t * w * @evalpoly(w,0.16666666666666666,-0.03333333333333333,0.023809523809523808,-0.03333333333333333,0.07575757575757576,-0.2531135531135531,1.1666666666666667,-7.092156862745098)
-  return ψ
+    t = inv(x)
+    w = t * t # 1/z^2
+    ψ += t + w / 2
+    # the coefficients here are Float64(bernoulli[2:9])
+    p = @evalpoly(
+        w,
+        T(0.16666666666666666), T(-0.03333333333333333),
+        T(0.023809523809523808), T(-0.03333333333333333),
+        T(0.07575757575757576), T(-0.2531135531135531),
+        T(1.1666666666666667), T(-7.092156862745098)
+    )
+    ψ += t * w * p
+    return ψ
 end
 
 @cufunc function SpecialFunctions.trigamma(x)
-  if x <= 0 # reflection formula
-    return (π / CUDA.sin(π * x))^2 - _cutrigamma(1 - x)
-  else
-    return _cutrigamma(x)
-  end
+    if x ≤ 0 # reflection formula
+        return (π / CUDA.sin(π * x))^2 - _cutrigamma(1 - x)
+    else
+        return _cutrigamma(x)
+    end
 end
 
 @cufunc SpecialFunctions.loggamma(x) = CUDA.lgamma(x)
@@ -94,7 +89,7 @@ import StatsFuns: gammalogpdf, zval, xval, normlogpdf, normcdf, log2π, invsqrt2
 
 @cufunc StatsFuns.gammalogpdf(k::Real, θ::Real, x::Number) = -loggamma(k) - k * log(θ) + (k - 1) * log(x) - x / θ
 
-    
+
 @cufunc function StatsFuns.xval(μ::Real, σ::Real, z::Number)
     if isinf(z) && iszero(σ)
         μ + one(σ) * z
