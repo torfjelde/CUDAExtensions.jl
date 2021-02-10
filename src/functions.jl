@@ -73,7 +73,13 @@ end
 end
 
 @cufunc SpecialFunctions.loggamma(x) = CUDA.lgamma(x)
-# @cufunc SpecialFunctions.logbeta(x, y) = SpecialFunctions.loggamma(x) + SpecialFunctions.loggamma(y) - SpecialFunctions.loggamma(x + y)
+
+@cufunc_register SpecialFunctions.logbeta
+@cufunc_function SpecialFunctions.logbeta(a, b) = (
+      SpecialFunctions.loggamma(a)
+    + SpecialFunctions.loggamma(b)
+    - SpecialFunctions.loggamma(a + b)
+)
 
 @cufunc SpecialFunctions.erf(x) = CUDA.erf(x)
 @cufunc SpecialFunctions.erfc(x) = CUDA.erfc(x)
