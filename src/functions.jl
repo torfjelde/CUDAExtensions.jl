@@ -136,9 +136,14 @@ end
 
 # logcdf
 @cufunc_register StatsFuns.normlogcdf
-@cufunc_function StatsFuns.normlogcdf(z::Number) = z < -1.0 ?
-    log(erfcx(-z * invsqrt2)/2) - abs2(z)/2 :
-    log1p(-erfc(z * invsqrt2)/2)
+@cufunc_function function StatsFuns.normlogcdf(z::Number)
+    invsqrt2 = inv(sqrt(oftype(z, 2)))
+    if z < -1.0
+        log(SpecialFunctions.erfcx(-z * invsqrt2)/2) - abs2(z)/2
+    else
+        SpecialFunctions.log1p(-SpecialFunctions.erfc(z * invsqrt2)/2)
+    end
+end
 @cufunc_function function StatsFuns.normlogcdf(μ::Real, σ::Real, x::Number)
     if iszero(σ) && x == μ
         z = zval(zero(μ), σ, one(x))
