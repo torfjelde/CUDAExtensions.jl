@@ -188,7 +188,7 @@ CUDA-broadcastable.
 """
 macro cufuncf(ex)
     newex = quote
-        $ex
+        $(Base).@__doc__ $ex
         CUDAExtensions.@cufunc($ex)
     end
     return esc(newex)
