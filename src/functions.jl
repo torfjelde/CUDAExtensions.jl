@@ -109,16 +109,7 @@ end
 @cufunc_register StatsFuns.normlogpdf
 @cufunc_function StatsFuns.normlogpdf(z::Number) = -(abs2(z) + log2π)/2
 @cufunc_function function StatsFuns.normlogpdf(μ::Real, σ::Real, x::Number)
-    if iszero(σ)
-        if x == μ
-            z = zval(μ, one(σ), x)
-        else
-            z = zval(μ, σ, x)
-            σ = one(σ)
-        end
-    else
-        z = zval(μ, σ, x)
-    end
+    z = zval(μ, σ, x)
     normlogpdf(z) - log(σ)
 end
 
@@ -126,11 +117,7 @@ end
 @cufunc_register StatsFuns.normcdf
 @cufunc_function StatsFuns.normcdf(z::Number) = erfc(-z * invsqrt2)/2
 @cufunc_function function StatsFuns.normcdf(μ::Real, σ::Real, x::Number)
-    if iszero(σ) && x == μ
-        z = zval(zero(μ), σ, one(x))
-    else        
-        z = zval(μ, σ, x)        
-    end
+    z = zval(μ, σ, x)
     normcdf(z)
 end
 
@@ -145,11 +132,7 @@ end
     end
 end
 @cufunc_function function StatsFuns.normlogcdf(μ::Real, σ::Real, x::Number)
-    if iszero(σ) && x == μ
-        z = zval(zero(μ), σ, one(x))
-    else        
-        z = zval(μ, σ, x)        
-    end
+    z = zval(μ, σ, x)
     normlogcdf(z)
 end
 
