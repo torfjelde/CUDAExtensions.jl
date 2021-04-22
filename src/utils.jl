@@ -107,7 +107,7 @@ function make_cufunc_diffrule(mod, f, nargs)
     end
 
     return quote
-        $(DiffRules).@define_diffrule $(Symbol(mod)).$(cuname)($(esc.(args)...)) = $(rhs)
+        $(DiffRules).@define_diffrule $(Symbol(mod)).$(cuname)($(esc.(args)...)) = $(esc(rhs))
         eval($(def_func)($(QuoteNode(Symbol(mod))), $(QuoteNode(cuname))))
     end
 end
